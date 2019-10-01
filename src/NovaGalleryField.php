@@ -4,25 +4,41 @@ namespace VysotskyProductions\NovaGalleryField;
 
 use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Illuminate\Support\Collection;
+use VysotskyProductions\NovaGalleryField\Traits\GalleryMeta;
 
 class NovaGalleryField extends Field
 {
+    use GalleryMeta;
     /**
      * The field's component.
      *
      * @var string
      */
     public $component = 'NovaGalleryField';
+
+    public $showOnCreation = false;
+
     public $name;
     public $galleriesCollection;
+    public $singular = true;
 
-    public function __construct($name, $galleriesCollection)
+    public $albumRelationName = 'album';
+    public $mediaRelationName = 'media';
+
+    public function __construct($name, $galleriesCollection, $albumRelationName = 'album', $mediaRelationName = 'media')
     {
         $this->name = $name;
-        $this->galleriesCollection = $galleriesCollection;
+        if ($galleriesCollection instanceof Collection) {
+            $this->galleriesCollection = $galleriesCollection;
+        } else {
+            $this->galleriesCollection = [$galleriesCollection];
+        }
+        $this->albumRelationName = $albumRelationName;
+        $this->mediaRelationName = $mediaRelationName;
     }
 
-    public $deletable = true;
+    public $deletable = false;
 
     public $downloadable = true;
 
@@ -94,58 +110,63 @@ class NovaGalleryField extends Field
                                                 $model,
                                                 $attribute)
     {
-        $cropData = json_decode($request[$attribute . "_crop_data"]);
 
-        if ($request[$attribute . "_delete_id"]) {
-            $model->{$attribute}()->dissociate();
-            $model->save();
-            $this->handler->delete($request[$attribute . "_delete_id"]);
+        //strategy
+        /* 1. if request gallery_strategy create
+         *   1.1 create gallery
+         *   1.2 save new media if exists with user class method
+         *   1.3 attach them to newly created gallery
+         * 2. if request gallery_strategy update
+         *   2.1 update gallery custom attributes
+         *   2.2 save new media if exists with user class method
+         *   2.3 attach media to gallery
+         *   2.4 delete media if has media_deleted (delete files with user func if deletable set to true)
+         *   2.5 detach galleries if detached_galleries
+         * */
+
+        if ($request->get('gallery_strategy') === 'create') {
+
+            $newGalleryAttrs = json_decode($request['new_gallery'], true);
+
+
+            $album = $model->{$this->albumRelationName}()->create($newGalleryAttrs);
+
+            if ($this->singular) {
+                $model->{$this->albumRelationName}()->associate($album);
+            } else {
+                $model->{$this->albumRelationName}()->attach($album);
+            }
+
+            $mediaIds = $this->handler->save($request['new'])->pluck('id');
+
+            $album->{$this->mediaRelationName}()->attach($mediaIds);
         }
 
-        if ($request->file($attribute . "_file")) {
+        if ($request->get('gallery_strategy') === 'update') {
 
-            $media = $this->handler->save(
-                $request->file($attribute . "_file"),
-                $cropData
-            );
-            $model->{$attribute}()->associate($media);
-            $model->save();
+//            2.1 update gallery custom attributes
+            $newGalleryAttrs = json_decode($request['updated_gallery_data'], true) ?? [];
+            if ($this->singular) {
+                $album = tap($model->{$this->albumRelationName})
+                    ->update($newGalleryAttrs);
+            } else {
+                $album = tap($model->{$this->albumRelationName}()
+                    ->find($request['current_gallery_id']))
+                    ->update($newGalleryAttrs);
+            }
+//         *   2.2 save new media if exists with user class method
+            $mediaIds = $this->handler->save($request['new'])->pluck('id');
+//         *   2.3 attach media to gallery
+            $album->{$this->mediaRelationName}()->attach($mediaIds);
+//           2.4 update media
+            $this->handler->update(json_decode($request['updated_media'], true));
+//            *   2.5 delete media if has media_deleted (delete files with user func if deletable set to true)
+//            todo:implement
+//         *   2.6 detach galleries if detached_galleries
+//            todo:implement
+
         }
 
-        if ($request[$attribute . "_update_id"] && $cropData) {
-            $this->handler->update($request[$attribute . "_update_id"], $cropData);
-        }
-    }
-
-
-    public function aspectRatio(float $aspectRatio)
-    {
-        return $this->withMeta(compact('aspectRatio'));
-    }
-
-    public function params(array $params)
-    {
-        return $this->withMeta(['params' => $params]);
-    }
-
-    public function getPhoto(string $previewUrl = null)
-    {
-        return $this->withMeta(compact('previewUrl'));
-    }
-
-    public function getPhotoDetail(string $previewDetailUrl = null)
-    {
-        return $this->withMeta(compact('previewDetailUrl'));
-    }
-
-    public function getPhotoForm(string $previewFormUrl = null)
-    {
-        return $this->withMeta(compact('previewFormUrl'));
-    }
-
-    public function getPhotoIndex(string $previewIndexUrl = null)
-    {
-        return $this->withMeta(compact('previewIndexUrl'));
     }
 
 
@@ -158,10 +179,13 @@ class NovaGalleryField extends Field
     {
         return array_merge(parent::jsonSerialize(), [
             'downloadable' => $this->downloadable,
-            'deletable' =>  $this->deletable,
+            'deletable' => $this->deletable,
             'useCropper' => $this->useCropper,
             'galleriesCollection' => $this->galleriesCollection,
-            'customGalleryFields' => $this->customGalleryFields
+            'customGalleryFields' => $this->customGalleryFields,
+            'albumRelationName' => $this->albumRelationName,
+            'mediaRelationName' => $this->mediaRelationName,
+            'singular' => $this->singular
         ]);
     }
 }

@@ -1,33 +1,61 @@
 <template>
-    <div class="border-b border-40 media-field px-8">
+    <div class="border-b border-40 media-field p-8">
 
-        <h2 class="text-80 pt-2 leading-tight">
-            {{ field.name }}
-        </h2>
-        <input type="file" ref="photo" style="display: none;" @change="loadPhoto">
+        <div>
+            <h2 v-if="currentGallery || newGalleryData" class="mb-8 text-center text-90 font-normal">
+                {{ field.name }} {{currentGallery ? currentGallery[galleryNameAttribute] :
+                newGalleryData[galleryNameAttribute]}}
+            </h2>
+            <h2 v-else class="mb-8 text-center text-90 font-normal">
+                Галлереи отсутствуют
+            </h2>
+            <button type="button" class="btn btn-default btn-primary" @click.prevent="showGalleryFields = true">
+                {{currentGallery || newGalleryData ? 'Редактировать галлерею' : 'Создать галлерею'}}
+            </button>
 
-        <div class="py px-8 w-full">
+            <select-control v-if="!field.singular"
+                            v-model="currentGallery"
+                            class="w-full form-control form-select"
+                            :options="field.allGalleries"
+            >
+                <option value="" selected :disabled="!field.nullable">{{
+                    __('Choose an option')
+                    }}
+                </option>
+            </select-control>
+        </div>
 
+        <gallery-custom-fields v-if="showGalleryFields"
+                               @close="showGalleryFields = false"
+                               @new-gallery-data="handleGallery"
+                               :custom-fields="customGalleryFields"
+        ></gallery-custom-fields>
 
-            <div class="w-1/2"
-                 v-if="customGalleryFields">
-                <component class="border-0" :key="custom.attribute" v-for="(custom, i) in customGalleryFields"
-                           :is="'form-'+custom.component"
-                           :field="custom"
-                >
+        <input type="file" ref="photo" multiple accept="image/*" max="5" style="display: none;" @change="loadPhoto">
 
-                </component>
-            </div>
+        <div class="w-full pt-8">
 
-            <h4 class="m-3">All media in this album</h4>
-            <div class="flex flex-wrap py-8 -mx-2">
+            <button type="button" v-if="currentGallery || newGalleryData" class="btn btn-default btn-primary"
+                    @click.prevent="$refs.photo.click()">
+                Добавить новую фотографию
+            </button>
+            <button type="button" class="btn btn-default btn-primary" @click.prevent="testRequest">
+                Иммитировать запрос
+            </button>
+
+            <div v-if="currentGallery || newGalleryData" class="flex flex-wrap py-8 -mx-2">
                 <div v-for="(m, i) in media" :key="m.id"
-                     class="px-2 w-1/5">
-                    <div class="card relative card relative border border-lg border-50 overflow-hidden p-2 inline-block">
-                        <img :src="m.preview || m.original" class="picture" alt="">
+                     class="p-2 w-1/4">
+                    <div class="card relative card relative border border-lg border-50 overflow-hidden p-2 inline-block w-full">
+                        <div v-if="m.file" class="absolute mr-2 bg-success rounded px-2 py-1 text-white"
+                             style="right: 0">
+                            {{__('New')}}
+                        </div>
+                        <img :src="m.preview || m.original" class="picture m-auto block" alt="">
                     </div>
                     <p v-if="m.preview || m.original" class="flex items-center justify-between text-sm mt-3 px-2">
-                        <download-button v-if="field.downloadable" :href="m.preview || m.original"></download-button>
+                        <download-button v-if="field.downloadable && !m.file"
+                                         :href="m.preview || m.original"></download-button>
                         <base-button class="text-success" @click-or-enter="openCropper(m)">
                             {{ __('Crop') }}
                         </base-button>
@@ -40,26 +68,6 @@
             </div>
         </div>
 
-
-        <!--        <div class="py-6 px-8 w-4/5">-->
-        <!--            <div v-if="original"-->
-        <!--                 @click="openCropper"-->
-        <!--                 style="max-width: 320px"-->
-        <!--                 class="card relative card relative border border-lg border-50 overflow-hidden px-2 py-2 inline-block"-->
-        <!--            >-->
-        <!--                <img :src="preview || original" class="image-preview">-->
-        <!--            </div>-->
-
-        <!--            <div v-else-->
-        <!--                 @drop.prevent="loadPhoto" @dragover.prevent-->
-        <!--                 class="border border-primary-30% flex hover:border-primary overflow-hidden rounded relative text-primary-30% hover:text-primary"-->
-        <!--                 style="width: 250px; height: 250px"-->
-        <!--                 @click="$refs.photo.click()">-->
-        <!--                <icon type="add" width="50" height="50" class="m-auto"/>-->
-        <!--            </div>-->
-
-        <!--        </div>-->
-
         <cropper v-if="showCropper && useCropper"
                  :img-src="selectedMedia.original"
                  :crop-data="selectedMedia.cropBoxData || {}"
@@ -68,18 +76,18 @@
                  @close="showCropper = false"
         ></cropper>
 
-        <div style="display: none;visibility: hidden;opacity: 0">
-            <default-field :field="field" :errors="errors">
-                <template slot="field">
-                    <input :id="field.attribute" type="text"
-                           class="w-full form-control form-input form-input-bordered"
-                           :class="errorClasses"
-                           :placeholder="field.name"
-                           v-model="value"
-                    />
-                </template>
-            </default-field>
-        </div>
+        <!--<div style="display: none;visibility: hidden;opacity: 0">-->
+            <!--<default-field :field="field" :errors="errors">-->
+                <!--<template slot="field">-->
+                    <!--<input :id="field.attribute" type="text"-->
+                           <!--class="w-full form-control form-input form-input-bordered"-->
+                           <!--:class="errorClasses"-->
+                           <!--:placeholder="field.name"-->
+                           <!--v-model="value"-->
+                    <!--/>-->
+                <!--</template>-->
+            <!--</default-field>-->
+        <!--</div>-->
     </div>
 </template>
 
@@ -90,6 +98,7 @@
     import {FormField, HandlesValidationErrors} from 'laravel-nova'
 
     import Cropper from "./Cropper"
+    import GalleryCustomFields from "./GalleryCustomFields";
     import DownloadButton from "./buttons/DownloadButton";
     import {convertBlobToBase64} from "../utils/convertBlobToBase64";
     import getFileExtension from "../utils/getFileExtension";
@@ -98,7 +107,7 @@
     Vue.config.devtools = true;
 
     export default {
-        components: {Cropper, DownloadButton, BaseButton},
+        components: {Cropper, DownloadButton, BaseButton, GalleryCustomFields},
 
         mixins: [FormField, HandlesValidationErrors],
 
@@ -106,16 +115,19 @@
 
         data() {
             return {
-                currentGallery: {},
+                currentGallery: null,
                 allGalleries: [],
+                newGalleryData: null,
+                detachedGalleries: [],
                 customGalleryFields: null,
+                showGalleryFields: false,
+
+                galleryNameAttribute: '',
 
                 media: [],
 
                 selectedMedia: {},
 
-                updatedMedia: [],
-                newMedia: [],
                 deletedMedia: [],
 
                 isSingle: true,
@@ -130,39 +142,48 @@
                 showCropper: false,
             }
         },
+
         methods: {
+            handleGallery(data) {
+                this.newGalleryData = data;
+                this.setCustomFieldsValues(data);
+
+                if (this.currentGallery) {
+                    this.currentGallery = Object.assign(this.currentGallery, data);
+                }
+            },
             openCropper(media) {
                 this.selectedMedia = media;
-
-                console.log(media.cropBoxData);
                 this.showCropper = true;
             },
             saveNewCropData({cropBoxData, dataUrl}) {
-                const {id} = this.selectedMedia;
-                if (id) {
-                    const media = this.media.find(m => m.id === id);
-                    media
-                        ? media.cropBoxData = cropBoxData
-                        : this.updatedMedia.push(this.selectedMedia)
-                } else {
-                    const {file} = this.selectedMedia;
-                    this.newMedia.push({
-                        file, cropBoxData
-                    })
-                }
+                // update current media crop data
+                this.selectedMedia.cropBoxData = cropBoxData;
+                //update current media preview
                 this.selectedMedia.preview = dataUrl;
-                console.log(this.updatedMedia)
             },
             loadPhoto(e) {
-                let file = e.dataTransfer ? e.dataTransfer.files[0] : e.target.files[0];
-                if (!file) return;
 
-                convertBlobToBase64(file).then(img => {
-                    this.original = img;
-                    this.preview = img;
-                    this.newPhoto = file;
-                });
+                //get files from drop or change event
+                let files = e.dataTransfer ? e.dataTransfer.files : e.target.files;
 
+                if (!files.length) return;
+
+                // for each file generate object and push to media and newMedia
+                [...files].forEach(f => convertBlobToBase64(f).then(
+                    src => ({
+                        id: _.uniqueId('url_'),
+                        preview: src,
+                        original: src,
+                        file: f,
+                        cropBoxData: {}
+                    })
+                ).then(media => {
+                    this.media.push(media);
+                    // this.newMedia.push(media);
+                }));
+
+                //reset input value
                 this.$refs.photo.value = null;
 
                 if (!/safari/i.test(navigator.userAgent)) {
@@ -172,21 +193,66 @@
 
             },
             deleteImage(media, i) {
-                if (media.id) {
-                    this.deletedMedia = _.uniq(_.concat(this.deletedMedia, media), 'id');
+                // if existing media push to delete
+                if (!media.file) {
+                    this.deletedMedia = _.uniq(_.concat(this.deletedMedia, [media.id]));
                 }
+                // delete from media
                 this.media.splice(i, 1);
+            },
+
+            testRequest() {
+                const fd = new FormData();
+                axios.post('/test', this.fill(fd))
+                    .then(({data}) => console.log(data))
+                    .catch(error => console.log(error));
             },
             /**
              * Fill the given FormData object with the field's internal value.
              */
             fill(formData) {
-                formData.append(`${this.field.attribute}_crop_data`, this.requestData || '');
-                formData.append(`${this.field.attribute}_file`, this.newPhoto || '');
-                formData.append(`${this.field.attribute}_delete_id`, this.deleteId || '');
-                formData.append(`${this.field.attribute}_update_id`, this.mediaId || '');
+
+                if (this.media.some(m => Boolean(m.file))) {
+                    formData = this.strategyNewMedia(formData);
+                }
+
+                if (!this.currentGallery && this.newGalleryData) {
+                    return this.strategyCreate(formData);
+                }
+
+                if (this.currentGallery) {
+                    return this.strategyUpdate(formData);
+                }
+                return formData;
             },
 
+            strategyNewMedia(formData) {
+                this.media.filter(m => m.file)
+                    .map(media => _.pick(media, ['id', 'file', 'cropBoxData']))
+                    .forEach(m => {
+                        formData.append(`new[${m.id}][file]`, m.file);
+                        formData.append(`new[${m.id}][cropData]`, JSON.stringify(m.cropBoxData));
+                    });
+                return formData
+            },
+            strategyCreate(formData) {
+                formData.append('gallery_strategy', 'create');
+                formData.append('new_gallery', JSON.stringify(this.newGalleryData));
+                return formData;
+            },
+            strategyUpdate(formData) {
+                const updatedMedia = this.media.filter(m => m.wasUpdated)
+                    .map(media => _.pick(media, ['id', 'cropBoxData']));
+
+                formData.append('gallery_strategy', 'update');
+                formData.append('current_gallery_id', this.currentGallery.id);
+
+                formData.append('deleted_media', JSON.stringify(this.deletedMedia));
+                formData.append('updated_media', JSON.stringify(updatedMedia));
+                formData.append('updated_gallery_data', JSON.stringify(this.newGalleryData));
+                formData.append('detached_galleries', JSON.stringify(this.detachedGalleries));
+                return formData;
+            },
             /**
              * Update the field's internal value.
              */
@@ -196,12 +262,15 @@
 
             //gallery methods
 
-            setCustomFieldsValues() {
+            setCustomFieldsValues(from) {
                 this.customGalleryFields = this.field.customGalleryFields.map(f => {
-                    const value = this.currentGallery[f.attribute];
-                    const attribute = `gallery_custom_${f.attribute}_${this.currentGallery.id}`
-                    return {...f, value, attribute}
-                })
+                    const value = from[f.attribute];
+                    return {...f, value}
+                });
+            },
+
+            createGallery() {
+
             }
 
         },
@@ -211,7 +280,15 @@
             },
         },
         mounted() {
-            const {value, previewFormUrl, previewUrl} = this.field;
+            const {
+                galleryNameAttribute = 'name',
+                previewFormUrl,
+                previewUrl,
+                albumRelationName,
+                mediaRelationName,
+            } = this.field;
+
+            this.galleryNameAttribute = galleryNameAttribute;
 
             this.allGalleries = this.field.galleriesCollection || [];
 
@@ -220,17 +297,18 @@
             }
 
             if (this.currentGallery) {
-                this.media = this.currentGallery.media.map(m => {
+                this.media = this.currentGallery[mediaRelationName].map(m => {
                         m.original = m[previewUrl] || null;
                         m.preview = m[previewFormUrl] || m[previewUrl] || null;
-
+                        m.wasUpdated = false;
                         m.cropBoxData = {};
                         return m;
                     }
                 );
 
-                this.setCustomFieldsValues();
-                console.log(this.customGalleryFields)
+                this.setCustomFieldsValues(this.currentGallery);
+            } else {
+                this.customGalleryFields = this.field.customGalleryFields;
             }
 
             //old

@@ -1549,7 +1549,7 @@ module.exports = Cancel;
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(15);
-module.exports = __webpack_require__(73);
+module.exports = __webpack_require__(78);
 
 
 /***/ }),
@@ -2701,7 +2701,7 @@ var normalizeComponent = __webpack_require__(1)
 /* script */
 var __vue_script__ = __webpack_require__(43)
 /* template */
-var __vue_template__ = __webpack_require__(72)
+var __vue_template__ = __webpack_require__(77)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -2824,13 +2824,17 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_laravel_nova___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_laravel_nova__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__Cropper__ = __webpack_require__(49);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__Cropper___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__Cropper__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__buttons_DownloadButton__ = __webpack_require__(60);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__buttons_DownloadButton___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3__buttons_DownloadButton__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__utils_convertBlobToBase64__ = __webpack_require__(65);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__utils_getFileExtension__ = __webpack_require__(66);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__buttons_BaseButton__ = __webpack_require__(67);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__buttons_BaseButton___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6__buttons_BaseButton__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__GalleryCustomFields__ = __webpack_require__(60);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__GalleryCustomFields___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3__GalleryCustomFields__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__buttons_DownloadButton__ = __webpack_require__(65);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__buttons_DownloadButton___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4__buttons_DownloadButton__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__utils_convertBlobToBase64__ = __webpack_require__(70);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__utils_getFileExtension__ = __webpack_require__(71);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__buttons_BaseButton__ = __webpack_require__(72);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__buttons_BaseButton___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7__buttons_BaseButton__);
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 //
 //
@@ -2917,6 +2921,15 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+
 
 
 
@@ -2931,7 +2944,7 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 __WEBPACK_IMPORTED_MODULE_0_vue___default.a.config.devtools = true;
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    components: { Cropper: __WEBPACK_IMPORTED_MODULE_2__Cropper___default.a, DownloadButton: __WEBPACK_IMPORTED_MODULE_3__buttons_DownloadButton___default.a, BaseButton: __WEBPACK_IMPORTED_MODULE_6__buttons_BaseButton___default.a },
+    components: { Cropper: __WEBPACK_IMPORTED_MODULE_2__Cropper___default.a, DownloadButton: __WEBPACK_IMPORTED_MODULE_4__buttons_DownloadButton___default.a, BaseButton: __WEBPACK_IMPORTED_MODULE_7__buttons_BaseButton___default.a, GalleryCustomFields: __WEBPACK_IMPORTED_MODULE_3__GalleryCustomFields___default.a },
 
     mixins: [__WEBPACK_IMPORTED_MODULE_1_laravel_nova__["FormField"], __WEBPACK_IMPORTED_MODULE_1_laravel_nova__["HandlesValidationErrors"]],
 
@@ -2939,16 +2952,19 @@ __WEBPACK_IMPORTED_MODULE_0_vue___default.a.config.devtools = true;
 
     data: function data() {
         return {
-            currentGallery: {},
+            currentGallery: null,
             allGalleries: [],
+            newGalleryData: null,
+            detachedGalleries: [],
             customGalleryFields: null,
+            showGalleryFields: false,
+
+            galleryNameAttribute: '',
 
             media: [],
 
             selectedMedia: {},
 
-            updatedMedia: [],
-            newMedia: [],
             deletedMedia: [],
 
             isSingle: true,
@@ -2964,45 +2980,54 @@ __WEBPACK_IMPORTED_MODULE_0_vue___default.a.config.devtools = true;
         };
     },
 
+
     methods: {
+        handleGallery: function handleGallery(data) {
+            this.newGalleryData = data;
+            this.setCustomFieldsValues(data);
+
+            if (this.currentGallery) {
+                this.currentGallery = Object.assign(this.currentGallery, data);
+            }
+        },
         openCropper: function openCropper(media) {
             this.selectedMedia = media;
-
-            console.log(media.cropBoxData);
             this.showCropper = true;
         },
         saveNewCropData: function saveNewCropData(_ref) {
             var cropBoxData = _ref.cropBoxData,
                 dataUrl = _ref.dataUrl;
-            var id = this.selectedMedia.id;
 
-            if (id) {
-                var media = this.media.find(function (m) {
-                    return m.id === id;
-                });
-                media ? media.cropBoxData = cropBoxData : this.updatedMedia.push(this.selectedMedia);
-            } else {
-                var file = this.selectedMedia.file;
-
-                this.newMedia.push({
-                    file: file, cropBoxData: cropBoxData
-                });
-            }
+            // update current media crop data
+            this.selectedMedia.cropBoxData = cropBoxData;
+            //update current media preview
             this.selectedMedia.preview = dataUrl;
-            console.log(this.updatedMedia);
         },
         loadPhoto: function loadPhoto(e) {
             var _this = this;
 
-            var file = e.dataTransfer ? e.dataTransfer.files[0] : e.target.files[0];
-            if (!file) return;
+            //get files from drop or change event
+            var files = e.dataTransfer ? e.dataTransfer.files : e.target.files;
 
-            Object(__WEBPACK_IMPORTED_MODULE_4__utils_convertBlobToBase64__["a" /* convertBlobToBase64 */])(file).then(function (img) {
-                _this.original = img;
-                _this.preview = img;
-                _this.newPhoto = file;
+            if (!files.length) return;
+
+            // for each file generate object and push to media and newMedia
+            [].concat(_toConsumableArray(files)).forEach(function (f) {
+                return Object(__WEBPACK_IMPORTED_MODULE_5__utils_convertBlobToBase64__["a" /* convertBlobToBase64 */])(f).then(function (src) {
+                    return {
+                        id: _.uniqueId('url_'),
+                        preview: src,
+                        original: src,
+                        file: f,
+                        cropBoxData: {}
+                    };
+                }).then(function (media) {
+                    _this.media.push(media);
+                    // this.newMedia.push(media);
+                });
             });
 
+            //reset input value
             this.$refs.photo.value = null;
 
             if (!/safari/i.test(navigator.userAgent)) {
@@ -3011,22 +3036,75 @@ __WEBPACK_IMPORTED_MODULE_0_vue___default.a.config.devtools = true;
             }
         },
         deleteImage: function deleteImage(media, i) {
-            if (media.id) {
-                this.deletedMedia = _.uniq(_.concat(this.deletedMedia, media), 'id');
+            // if existing media push to delete
+            if (!media.file) {
+                this.deletedMedia = _.uniq(_.concat(this.deletedMedia, [media.id]));
             }
+            // delete from media
             this.media.splice(i, 1);
+        },
+        testRequest: function testRequest() {
+            var fd = new FormData();
+            axios.post('/test', this.fill(fd)).then(function (_ref2) {
+                var data = _ref2.data;
+                return console.log(data);
+            }).catch(function (error) {
+                return console.log(error);
+            });
         },
 
         /**
          * Fill the given FormData object with the field's internal value.
          */
         fill: function fill(formData) {
-            formData.append(this.field.attribute + '_crop_data', this.requestData || '');
-            formData.append(this.field.attribute + '_file', this.newPhoto || '');
-            formData.append(this.field.attribute + '_delete_id', this.deleteId || '');
-            formData.append(this.field.attribute + '_update_id', this.mediaId || '');
-        },
 
+            if (this.media.some(function (m) {
+                return Boolean(m.file);
+            })) {
+                formData = this.strategyNewMedia(formData);
+            }
+
+            if (!this.currentGallery && this.newGalleryData) {
+                return this.strategyCreate(formData);
+            }
+
+            if (this.currentGallery) {
+                return this.strategyUpdate(formData);
+            }
+            return formData;
+        },
+        strategyNewMedia: function strategyNewMedia(formData) {
+            this.media.filter(function (m) {
+                return m.file;
+            }).map(function (media) {
+                return _.pick(media, ['id', 'file', 'cropBoxData']);
+            }).forEach(function (m) {
+                formData.append('new[' + m.id + '][file]', m.file);
+                formData.append('new[' + m.id + '][cropData]', JSON.stringify(m.cropBoxData));
+            });
+            return formData;
+        },
+        strategyCreate: function strategyCreate(formData) {
+            formData.append('gallery_strategy', 'create');
+            formData.append('new_gallery', JSON.stringify(this.newGalleryData));
+            return formData;
+        },
+        strategyUpdate: function strategyUpdate(formData) {
+            var updatedMedia = this.media.filter(function (m) {
+                return m.wasUpdated;
+            }).map(function (media) {
+                return _.pick(media, ['id', 'cropBoxData']);
+            });
+
+            formData.append('gallery_strategy', 'update');
+            formData.append('current_gallery_id', this.currentGallery.id);
+
+            formData.append('deleted_media', JSON.stringify(this.deletedMedia));
+            formData.append('updated_media', JSON.stringify(updatedMedia));
+            formData.append('updated_gallery_data', JSON.stringify(this.newGalleryData));
+            formData.append('detached_galleries', JSON.stringify(this.detachedGalleries));
+            return formData;
+        },
 
         /**
          * Update the field's internal value.
@@ -3038,15 +3116,13 @@ __WEBPACK_IMPORTED_MODULE_0_vue___default.a.config.devtools = true;
 
         //gallery methods
 
-        setCustomFieldsValues: function setCustomFieldsValues() {
-            var _this2 = this;
-
+        setCustomFieldsValues: function setCustomFieldsValues(from) {
             this.customGalleryFields = this.field.customGalleryFields.map(function (f) {
-                var value = _this2.currentGallery[f.attribute];
-                var attribute = 'gallery_custom_' + f.attribute + '_' + _this2.currentGallery.id;
-                return _extends({}, f, { value: value, attribute: attribute });
+                var value = from[f.attribute];
+                return _extends({}, f, { value: value });
             });
-        }
+        },
+        createGallery: function createGallery() {}
     },
     computed: {
         requestData: function requestData() {
@@ -3055,10 +3131,15 @@ __WEBPACK_IMPORTED_MODULE_0_vue___default.a.config.devtools = true;
     },
     mounted: function mounted() {
         var _field = this.field,
-            value = _field.value,
+            _field$galleryNameAtt = _field.galleryNameAttribute,
+            galleryNameAttribute = _field$galleryNameAtt === undefined ? 'name' : _field$galleryNameAtt,
             previewFormUrl = _field.previewFormUrl,
-            previewUrl = _field.previewUrl;
+            previewUrl = _field.previewUrl,
+            albumRelationName = _field.albumRelationName,
+            mediaRelationName = _field.mediaRelationName;
 
+
+        this.galleryNameAttribute = galleryNameAttribute;
 
         this.allGalleries = this.field.galleriesCollection || [];
 
@@ -3067,16 +3148,17 @@ __WEBPACK_IMPORTED_MODULE_0_vue___default.a.config.devtools = true;
         }
 
         if (this.currentGallery) {
-            this.media = this.currentGallery.media.map(function (m) {
+            this.media = this.currentGallery[mediaRelationName].map(function (m) {
                 m.original = m[previewUrl] || null;
                 m.preview = m[previewFormUrl] || m[previewUrl] || null;
-
+                m.wasUpdated = false;
                 m.cropBoxData = {};
                 return m;
             });
 
-            this.setCustomFieldsValues();
-            console.log(this.customGalleryFields);
+            this.setCustomFieldsValues(this.currentGallery);
+        } else {
+            this.customGalleryFields = this.field.customGalleryFields;
         }
 
         //old
@@ -30139,6 +30221,243 @@ var __vue_template_functional__ = false
 /* styles */
 var __vue_styles__ = injectStyle
 /* scopeId */
+var __vue_scopeId__ = "data-v-0d29843e"
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/js/components/GalleryCustomFields.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-0d29843e", Component.options)
+  } else {
+    hotAPI.reload("data-v-0d29843e", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 61 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(62);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(3)("819ebfee", content, false, {});
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-0d29843e\",\"scoped\":true,\"hasInlineConfig\":true}!../../../node_modules/sass-loader/lib/loader.js!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./GalleryCustomFields.vue", function() {
+     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-0d29843e\",\"scoped\":true,\"hasInlineConfig\":true}!../../../node_modules/sass-loader/lib/loader.js!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./GalleryCustomFields.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 62 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(2)(false);
+// imports
+
+
+// module
+exports.push([module.i, "\n.custom-component input[data-v-0d29843e] {\n  width: 100%;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 63 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+    name: "GalleryCustomFields",
+    props: ['customFields'],
+    methods: {
+        closeModal: function closeModal() {
+            this.$emit('close');
+        },
+        sendData: function sendData() {
+            var formData = new FormData();
+            this.customFields.forEach(function (f) {
+                return f.fill(formData);
+            });
+            this.$emit('new-gallery-data', _.fromPairs([].concat(_toConsumableArray(formData.entries()))));
+            this.closeModal();
+        }
+    }
+});
+
+/***/ }),
+/* 64 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "modal",
+    { on: { "modal-close": _vm.closeModal } },
+    [
+      _c(
+        "card",
+        {
+          staticClass:
+            "text-center m-2 mb-0 bg-white rounded-lg p-view shadow-lg overflow-hidden test",
+          staticStyle: { width: "80vw" }
+        },
+        [
+          _vm.customFields
+            ? _c(
+                "form",
+                {
+                  on: {
+                    submit: function($event) {
+                      $event.preventDefault()
+                      return _vm.sendData($event)
+                    }
+                  }
+                },
+                [
+                  _vm._l(_vm.customFields, function(custom, i) {
+                    return _c("form-" + custom.component, {
+                      key: custom.attribute,
+                      tag: "component",
+                      staticClass: "custom-component",
+                      attrs: { field: custom }
+                    })
+                  }),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "pt-8" }, [
+                    _c(
+                      "button",
+                      {
+                        staticClass: "btn btn-default btn-primary",
+                        attrs: { type: "submit" }
+                      },
+                      [
+                        _vm._v(
+                          "\n                    " +
+                            _vm._s(_vm.__("Continue")) +
+                            "\n                "
+                        )
+                      ]
+                    ),
+                    _vm._v(" "),
+                    _c(
+                      "button",
+                      {
+                        staticClass: "btn btn-default btn-primary",
+                        attrs: { type: "button" },
+                        on: { click: _vm.closeModal }
+                      },
+                      [
+                        _vm._v(
+                          "\n                    " +
+                            _vm._s(_vm.__("Cancel")) +
+                            "\n                "
+                        )
+                      ]
+                    )
+                  ])
+                ],
+                2
+              )
+            : _vm._e()
+        ]
+      )
+    ],
+    1
+  )
+}
+var staticRenderFns = []
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-0d29843e", module.exports)
+  }
+}
+
+/***/ }),
+/* 65 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(66)
+}
+var normalizeComponent = __webpack_require__(1)
+/* script */
+var __vue_script__ = __webpack_require__(68)
+/* template */
+var __vue_template__ = __webpack_require__(69)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
 var __vue_scopeId__ = "data-v-28920b5a"
 /* moduleIdentifier (server only) */
 var __vue_module_identifier__ = null
@@ -30172,13 +30491,13 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 61 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(62);
+var content = __webpack_require__(67);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -30198,7 +30517,7 @@ if(false) {
 }
 
 /***/ }),
-/* 62 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(2)(false);
@@ -30212,7 +30531,7 @@ exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\
 
 
 /***/ }),
-/* 63 */
+/* 68 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -30260,7 +30579,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 64 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -30319,7 +30638,7 @@ if (false) {
 }
 
 /***/ }),
-/* 65 */
+/* 70 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -30336,7 +30655,7 @@ var convertBlobToBase64 = function convertBlobToBase64(blob) {
 };
 
 /***/ }),
-/* 66 */
+/* 71 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -30346,19 +30665,19 @@ function getFileExtension(filename) {
 }
 
 /***/ }),
-/* 67 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
 function injectStyle (ssrContext) {
   if (disposed) return
-  __webpack_require__(68)
+  __webpack_require__(73)
 }
 var normalizeComponent = __webpack_require__(1)
 /* script */
-var __vue_script__ = __webpack_require__(70)
+var __vue_script__ = __webpack_require__(75)
 /* template */
-var __vue_template__ = __webpack_require__(71)
+var __vue_template__ = __webpack_require__(76)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -30397,13 +30716,13 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 68 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(69);
+var content = __webpack_require__(74);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
@@ -30423,7 +30742,7 @@ if(false) {
 }
 
 /***/ }),
-/* 69 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(2)(false);
@@ -30437,7 +30756,7 @@ exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\
 
 
 /***/ }),
-/* 70 */
+/* 75 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -30469,7 +30788,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 71 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -30526,7 +30845,7 @@ if (false) {
 }
 
 /***/ }),
-/* 72 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -30535,116 +30854,247 @@ var render = function() {
   var _c = _vm._self._c || _h
   return _c(
     "div",
-    { staticClass: "border-b border-40 media-field px-8" },
+    { staticClass: "border-b border-40 media-field p-8" },
     [
-      _c("h2", { staticClass: "text-80 pt-2 leading-tight" }, [
-        _vm._v("\n        " + _vm._s(_vm.field.name) + "\n    ")
-      ]),
+      _c(
+        "div",
+        [
+          _vm.currentGallery || _vm.newGalleryData
+            ? _c(
+                "h2",
+                { staticClass: "mb-8 text-center text-90 font-normal" },
+                [
+                  _vm._v(
+                    "\n            " +
+                      _vm._s(_vm.field.name) +
+                      " " +
+                      _vm._s(
+                        _vm.currentGallery
+                          ? _vm.currentGallery[_vm.galleryNameAttribute]
+                          : _vm.newGalleryData[_vm.galleryNameAttribute]
+                      ) +
+                      "\n        "
+                  )
+                ]
+              )
+            : _c(
+                "h2",
+                { staticClass: "mb-8 text-center text-90 font-normal" },
+                [_vm._v("\n            Галлереи отсутствуют\n        ")]
+              ),
+          _vm._v(" "),
+          _c(
+            "button",
+            {
+              staticClass: "btn btn-default btn-primary",
+              attrs: { type: "button" },
+              on: {
+                click: function($event) {
+                  $event.preventDefault()
+                  _vm.showGalleryFields = true
+                }
+              }
+            },
+            [
+              _vm._v(
+                "\n            " +
+                  _vm._s(
+                    _vm.currentGallery || _vm.newGalleryData
+                      ? "Редактировать галлерею"
+                      : "Создать галлерею"
+                  ) +
+                  "\n        "
+              )
+            ]
+          ),
+          _vm._v(" "),
+          !_vm.field.singular
+            ? _c(
+                "select-control",
+                {
+                  staticClass: "w-full form-control form-select",
+                  attrs: { options: _vm.field.allGalleries },
+                  model: {
+                    value: _vm.currentGallery,
+                    callback: function($$v) {
+                      _vm.currentGallery = $$v
+                    },
+                    expression: "currentGallery"
+                  }
+                },
+                [
+                  _c(
+                    "option",
+                    {
+                      attrs: {
+                        value: "",
+                        selected: "",
+                        disabled: !_vm.field.nullable
+                      }
+                    },
+                    [
+                      _vm._v(
+                        _vm._s(_vm.__("Choose an option")) + "\n            "
+                      )
+                    ]
+                  )
+                ]
+              )
+            : _vm._e()
+        ],
+        1
+      ),
+      _vm._v(" "),
+      _vm.showGalleryFields
+        ? _c("gallery-custom-fields", {
+            attrs: { "custom-fields": _vm.customGalleryFields },
+            on: {
+              close: function($event) {
+                _vm.showGalleryFields = false
+              },
+              "new-gallery-data": _vm.handleGallery
+            }
+          })
+        : _vm._e(),
       _vm._v(" "),
       _c("input", {
         ref: "photo",
         staticStyle: { display: "none" },
-        attrs: { type: "file" },
+        attrs: { type: "file", multiple: "", accept: "image/*", max: "5" },
         on: { change: _vm.loadPhoto }
       }),
       _vm._v(" "),
-      _c("div", { staticClass: "py px-8 w-full" }, [
-        _vm.customGalleryFields
+      _c("div", { staticClass: "w-full pt-8" }, [
+        _vm.currentGallery || _vm.newGalleryData
           ? _c(
-              "div",
-              { staticClass: "w-1/2" },
-              _vm._l(_vm.customGalleryFields, function(custom, i) {
-                return _c("form-" + custom.component, {
-                  key: custom.attribute,
-                  tag: "component",
-                  staticClass: "border-0",
-                  attrs: { field: custom }
-                })
-              }),
-              1
+              "button",
+              {
+                staticClass: "btn btn-default btn-primary",
+                attrs: { type: "button" },
+                on: {
+                  click: function($event) {
+                    $event.preventDefault()
+                    return _vm.$refs.photo.click()
+                  }
+                }
+              },
+              [_vm._v("\n            Добавить новую фотографию\n        ")]
             )
           : _vm._e(),
         _vm._v(" "),
-        _c("h4", { staticClass: "m-3" }, [_vm._v("All media in this album")]),
-        _vm._v(" "),
         _c(
-          "div",
-          { staticClass: "flex flex-wrap py-8 -mx-2" },
-          _vm._l(_vm.media, function(m, i) {
-            return _c("div", { key: m.id, staticClass: "px-2 w-1/5" }, [
-              _c(
-                "div",
-                {
-                  staticClass:
-                    "card relative card relative border border-lg border-50 overflow-hidden p-2 inline-block"
-                },
-                [
-                  _c("img", {
-                    staticClass: "picture",
-                    attrs: { src: m.preview || m.original, alt: "" }
-                  })
-                ]
-              ),
-              _vm._v(" "),
-              m.preview || m.original
-                ? _c(
-                    "p",
+          "button",
+          {
+            staticClass: "btn btn-default btn-primary",
+            attrs: { type: "button" },
+            on: {
+              click: function($event) {
+                $event.preventDefault()
+                return _vm.testRequest($event)
+              }
+            }
+          },
+          [_vm._v("\n            Иммитировать запрос\n        ")]
+        ),
+        _vm._v(" "),
+        _vm.currentGallery || _vm.newGalleryData
+          ? _c(
+              "div",
+              { staticClass: "flex flex-wrap py-8 -mx-2" },
+              _vm._l(_vm.media, function(m, i) {
+                return _c("div", { key: m.id, staticClass: "p-2 w-1/4" }, [
+                  _c(
+                    "div",
                     {
                       staticClass:
-                        "flex items-center justify-between text-sm mt-3 px-2"
+                        "card relative card relative border border-lg border-50 overflow-hidden p-2 inline-block w-full"
                     },
                     [
-                      _vm.field.downloadable
-                        ? _c("download-button", {
-                            attrs: { href: m.preview || m.original }
-                          })
+                      m.file
+                        ? _c(
+                            "div",
+                            {
+                              staticClass:
+                                "absolute mr-2 bg-success rounded px-2 py-1 text-white",
+                              staticStyle: { right: "0" }
+                            },
+                            [
+                              _vm._v(
+                                "\n                        " +
+                                  _vm._s(_vm.__("New")) +
+                                  "\n                    "
+                              )
+                            ]
+                          )
                         : _vm._e(),
                       _vm._v(" "),
-                      _c(
-                        "base-button",
+                      _c("img", {
+                        staticClass: "picture m-auto block",
+                        attrs: { src: m.preview || m.original, alt: "" }
+                      })
+                    ]
+                  ),
+                  _vm._v(" "),
+                  m.preview || m.original
+                    ? _c(
+                        "p",
                         {
-                          staticClass: "text-success",
-                          on: {
-                            "click-or-enter": function($event) {
-                              return _vm.openCropper(m)
-                            }
-                          }
+                          staticClass:
+                            "flex items-center justify-between text-sm mt-3 px-2"
                         },
                         [
-                          _vm._v(
-                            "\n                        " +
-                              _vm._s(_vm.__("Crop")) +
-                              "\n                    "
+                          _vm.field.downloadable && !m.file
+                            ? _c("download-button", {
+                                attrs: { href: m.preview || m.original }
+                              })
+                            : _vm._e(),
+                          _vm._v(" "),
+                          _c(
+                            "base-button",
+                            {
+                              staticClass: "text-success",
+                              on: {
+                                "click-or-enter": function($event) {
+                                  return _vm.openCropper(m)
+                                }
+                              }
+                            },
+                            [
+                              _vm._v(
+                                "\n                        " +
+                                  _vm._s(_vm.__("Crop")) +
+                                  "\n                    "
+                              )
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "base-button",
+                            {
+                              staticClass: "text-danger",
+                              on: {
+                                "click-or-enter": function($event) {
+                                  return _vm.deleteImage(m, i)
+                                }
+                              }
+                            },
+                            [
+                              _vm._v(
+                                "\n                        " +
+                                  _vm._s(_vm.__("Delete")) +
+                                  "\n                    "
+                              )
+                            ]
                           )
-                        ]
-                      ),
-                      _vm._v(" "),
-                      _c(
-                        "base-button",
-                        {
-                          staticClass: "text-danger",
-                          on: {
-                            "click-or-enter": function($event) {
-                              return _vm.deleteImage(m, i)
-                            }
-                          }
-                        },
-                        [
-                          _vm._v(
-                            "\n                        " +
-                              _vm._s(_vm.__("Delete")) +
-                              "\n                    "
-                          )
-                        ]
+                        ],
+                        1
                       )
-                    ],
-                    1
-                  )
-                : _vm._e()
-            ])
-          }),
-          0
-        )
+                    : _vm._e()
+                ])
+              }),
+              0
+            )
+          : _vm._e()
       ]),
       _vm._v(" "),
       _vm.showCropper && _vm.useCropper
@@ -30661,53 +31111,7 @@ var render = function() {
               }
             }
           })
-        : _vm._e(),
-      _vm._v(" "),
-      _c(
-        "div",
-        {
-          staticStyle: { display: "none", visibility: "hidden", opacity: "0" }
-        },
-        [
-          _c(
-            "default-field",
-            { attrs: { field: _vm.field, errors: _vm.errors } },
-            [
-              _c("template", { slot: "field" }, [
-                _c("input", {
-                  directives: [
-                    {
-                      name: "model",
-                      rawName: "v-model",
-                      value: _vm.value,
-                      expression: "value"
-                    }
-                  ],
-                  staticClass:
-                    "w-full form-control form-input form-input-bordered",
-                  class: _vm.errorClasses,
-                  attrs: {
-                    id: _vm.field.attribute,
-                    type: "text",
-                    placeholder: _vm.field.name
-                  },
-                  domProps: { value: _vm.value },
-                  on: {
-                    input: function($event) {
-                      if ($event.target.composing) {
-                        return
-                      }
-                      _vm.value = $event.target.value
-                    }
-                  }
-                })
-              ])
-            ],
-            2
-          )
-        ],
-        1
-      )
+        : _vm._e()
     ],
     1
   )
@@ -30723,7 +31127,7 @@ if (false) {
 }
 
 /***/ }),
-/* 73 */
+/* 78 */
 /***/ (function(module, exports) {
 
 // removed by extract-text-webpack-plugin
