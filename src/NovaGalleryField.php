@@ -110,23 +110,9 @@ class NovaGalleryField extends Field
                                                 $model,
                                                 $attribute)
     {
-
-        //strategy
-        /* 1. if request gallery_strategy create
-         *   1.1 create gallery
-         *   1.2 save new media if exists with user class method
-         *   1.3 attach them to newly created gallery
-         * 2. if request gallery_strategy update
-         *   2.1 update gallery custom attributes
-         *   2.2 save new media if exists with user class method
-         *   2.3 attach media to gallery
-         *   2.4 delete media if has media_deleted (delete files with user func if deletable set to true)
-         *   2.5 detach galleries if detached_galleries
-         * */
-
         if ($request->get('gallery_strategy') === 'create') {
 
-            $newGalleryAttrs = json_decode($request['new_gallery'], true);
+            $newGalleryAttrs = json_decode($request['new_gallery'], true) ?? [];
 
 
             $album = $model->{$this->albumRelationName}()->create($newGalleryAttrs);
@@ -161,9 +147,14 @@ class NovaGalleryField extends Field
 //           2.4 update media
             $this->handler->update(json_decode($request['updated_media'], true));
 //            *   2.5 delete media if has media_deleted (delete files with user func if deletable set to true)
-//            todo:implement
+            if ($request->has('deleted_media')) {
+                if ($this->deletable) $this->handler->delete(json_decode($request['deleted_media']));
+                $album->{$this->mediaRelationName}()->detach(json_decode($request['deleted_media']));
+            }
 //         *   2.6 detach galleries if detached_galleries
-//            todo:implement
+            if ($this->singular === false && $request->has('detached_galleries')) {
+                $model->{$this->albumRelationName}()->detach(json_decode($request['detached_galleries']));
+            }
 
         }
 
