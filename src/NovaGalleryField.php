@@ -22,6 +22,8 @@ class NovaGalleryField extends Field
     public $name;
     public $galleriesCollection;
     public $singular = true;
+    public $sortable = false;
+    public $sortableColumn = 'order';
 
     public $albumRelationName = 'album';
     public $mediaRelationName = 'media';
@@ -56,6 +58,19 @@ class NovaGalleryField extends Field
     {
 //        todo:implement deletable logic only if deletable is true
         $this->deletable = $deletable;
+        return $this;
+    }
+
+    public function setSortable(string $sortableColumn = 'order')
+    {
+        $this->sortableColumn = $sortableColumn;
+        $this->sortable = true;
+        return $this;
+    }
+
+    public function multiple()
+    {
+        $this->singular = false;
         return $this;
     }
 
@@ -117,11 +132,12 @@ class NovaGalleryField extends Field
 
             $album = $model->{$this->albumRelationName}()->create($newGalleryAttrs);
 
-            if ($this->singular) {
-                $model->{$this->albumRelationName}()->associate($album);
-            } else {
-                $model->{$this->albumRelationName}()->attach($album);
-            }
+            //todo: check if works without commented lines
+//            if ($this->singular) {
+//                $model->{$this->albumRelationName}()->associate($album);
+//            } else {
+//                $model->{$this->albumRelationName}()->attach($album);
+//            }
 
             $mediaIds = $this->handler->save($request['new'])->pluck('id');
 
@@ -140,12 +156,26 @@ class NovaGalleryField extends Field
                     ->find($request['current_gallery_id']))
                     ->update($newGalleryAttrs);
             }
+
+            if (!$this->singular && $this->sortable && $request->has('galleries_order')) {
+                $model->{$this->albumRelationName}()->syncWithoutDetaching($request['galleries_order']);
+            }
 //         *   2.2 save new media if exists with user class method
             $mediaIds = $this->handler->save($request['new'])->pluck('id');
 //         *   2.3 attach media to gallery
+//            2.3.a if sortable combine with order data
+            if ($this->sortable && $request->has('new_media_order')) {
+                $mediaIds = collect($mediaIds)->combine($request['new_media_order']);
+            }
             $album->{$this->mediaRelationName}()->attach($mediaIds);
 //           2.4 update media
             $this->handler->update(json_decode($request['updated_media'], true));
+
+//            2.4.a update pivot order if exist
+            if ($this->sortable && $request->has('existing_media_order')) {
+                $album->{$this->mediaRelationName}()->syncWithoutDetaching($request['existing_media_order']);
+            }
+
 //            *   2.5 delete media if has media_deleted (delete files with user func if deletable set to true)
             if ($request->has('deleted_media')) {
                 if ($this->deletable) $this->handler->delete(json_decode($request['deleted_media']));
@@ -176,7 +206,9 @@ class NovaGalleryField extends Field
             'customGalleryFields' => $this->customGalleryFields,
             'albumRelationName' => $this->albumRelationName,
             'mediaRelationName' => $this->mediaRelationName,
-            'singular' => $this->singular
+            'singular' => $this->singular,
+            'sortable' => $this->sortable,
+            'sortableColumn' => $this->sortableColumn
         ]);
     }
 }

@@ -13,17 +13,31 @@
                 {{currentGallery || newGalleryData ? 'Редактировать галлерею' : 'Создать галлерею'}}
             </button>
 
-            <select-control v-if="!field.singular"
-                            v-model="currentGallery"
-                            class="w-full form-control form-select"
-                            :options="field.allGalleries"
+            <button type="button" class="btn btn-default btn-primary" @click.prevent="showGallerySortModal = true">
+                Изменить порядок галерей
+            </button>
+
+            <select v-if="!field.singular && allGalleries && currentGallery"
+                    class="w-1/4 form-control form-select"
+                    @change="handleGalleryChange"
             >
-                <option value="" selected :disabled="!field.nullable">{{
-                    __('Choose an option')
-                    }}
+                <option v-for="(g, i) in allGalleries" :value="i">
+                    {{g[galleryNameAttribute]}}
                 </option>
-            </select-control>
+            </select>
+
+            <button type="button" v-if="currentGallery && !field.singular" class="btn btn-default btn-primary"
+                    @click.prevent="showGalleryFields = true">
+                Создать галлерею
+            </button>
         </div>
+
+        <sortable-galleries v-if="showGallerySortModal && field.sortable"
+                            :galleries="allGalleries"
+                            :gallery-name-attribute="galleryNameAttribute"
+                            @change-gallery-sort="handleGallerySort"
+                            @close="showGallerySortModal = false">
+        </sortable-galleries>
 
         <gallery-custom-fields v-if="showGalleryFields"
                                @close="showGalleryFields = false"
@@ -44,25 +58,28 @@
             </button>
 
             <div v-if="currentGallery || newGalleryData" class="flex flex-wrap py-8 -mx-2">
-                <div v-for="(m, i) in media" :key="m.id"
-                     class="p-2 w-1/4">
-                    <div class="card relative card relative border border-lg border-50 overflow-hidden p-2 inline-block w-full">
-                        <div v-if="m.file" class="absolute mr-2 bg-success rounded px-2 py-1 text-white"
-                             style="right: 0">
-                            {{__('New')}}
-                        </div>
-                        <img :src="m.preview || m.original" class="picture m-auto block" alt="">
+
+                <draggable v-if="field.sortable" class="flex flex-wrap py-8 -mx-2" v-model="media">
+                    <div class="p-2 w-1/4" v-for="(m, i) in media" :key="m.id">
+                        <media :media="m"
+                               :src="m.preview || m.original"
+                               :downloadable="field.downloadable"
+                               :use-cropper="useCropper"
+                               :idx="i"
+                               @open-cropper="openCropper"
+                               @delete-media="deleteImage"
+                        ></media>
                     </div>
-                    <p v-if="m.preview || m.original" class="flex items-center justify-between text-sm mt-3 px-2">
-                        <download-button v-if="field.downloadable && !m.file"
-                                         :href="m.preview || m.original"></download-button>
-                        <base-button class="text-success" @click-or-enter="openCropper(m)">
-                            {{ __('Crop') }}
-                        </base-button>
-                        <base-button class="text-danger" @click-or-enter="deleteImage(m, i)">
-                            {{ __('Delete') }}
-                        </base-button>
-                    </p>
+                </draggable>
+                <div v-else class="p-2 w-1/4" v-for="(m, i) in media" :key="m.id">
+                    <media :media="m"
+                           :src="m.preview || m.original"
+                           :downloadable="field.downloadable"
+                           :use-cropper="useCropper"
+                           :idx="i"
+                           @open-cropper="openCropper"
+                           @delete-media="deleteImage"
+                    ></media>
                 </div>
 
             </div>
@@ -75,19 +92,6 @@
                  @cropped="saveNewCropData"
                  @close="showCropper = false"
         ></cropper>
-
-        <!--<div style="display: none;visibility: hidden;opacity: 0">-->
-            <!--<default-field :field="field" :errors="errors">-->
-                <!--<template slot="field">-->
-                    <!--<input :id="field.attribute" type="text"-->
-                           <!--class="w-full form-control form-input form-input-bordered"-->
-                           <!--:class="errorClasses"-->
-                           <!--:placeholder="field.name"-->
-                           <!--v-model="value"-->
-                    <!--/>-->
-                <!--</template>-->
-            <!--</default-field>-->
-        <!--</div>-->
     </div>
 </template>
 
@@ -96,18 +100,21 @@
 
 
     import {FormField, HandlesValidationErrors} from 'laravel-nova'
+    import draggable from 'vuedraggable';
 
-    import Cropper from "./Cropper"
+    import Cropper from "./Cropper";
+    import SortableGalleries from './SortableGalleries';
     import GalleryCustomFields from "./GalleryCustomFields";
     import DownloadButton from "./buttons/DownloadButton";
     import {convertBlobToBase64} from "../utils/convertBlobToBase64";
     import getFileExtension from "../utils/getFileExtension";
     import BaseButton from "./buttons/BaseButton";
+    import Media from "./Media";
 
     Vue.config.devtools = true;
 
     export default {
-        components: {Cropper, DownloadButton, BaseButton, GalleryCustomFields},
+        components: {Cropper, DownloadButton, BaseButton, GalleryCustomFields, Media, draggable, SortableGalleries},
 
         mixins: [FormField, HandlesValidationErrors],
 
@@ -115,6 +122,9 @@
 
         data() {
             return {
+                showGallerySortModal: false,
+                galleriesOrder: false,
+
                 currentGallery: null,
                 allGalleries: [],
                 newGalleryData: null,
@@ -132,6 +142,8 @@
 
                 isSingle: true,
 
+                sortableColumn: '',
+
                 //old
                 value: false,
                 name: false,
@@ -144,12 +156,42 @@
         },
 
         methods: {
+            handleGallerySort(newOrder) {
+                this.galleriesOrder = newOrder;
+            },
+            handleGalleryChange({target}) {
+                this.currentGallery = this.allGalleries[target.value];
+                const {
+                    mediaRelationName,
+                    previewFormUrl,
+                    previewUrl,
+                } = this.field;
+                console.log(this.currentGallery);
+                this.media = this.currentGallery[mediaRelationName].map(m => {
+                        m.original = m[previewUrl] || null;
+                        m.preview = m[previewFormUrl] || m[previewUrl] || null;
+                        m.wasUpdated = false;
+                        m.cropBoxData = {};
+                        return m;
+                    }
+                );
+
+                this.setCustomFieldsValues(this.currentGallery);
+
+                this.deletedMedia = [];
+                this.newGalleryData = null;
+            },
             handleGallery(data) {
                 this.newGalleryData = data;
                 this.setCustomFieldsValues(data);
 
-                if (this.currentGallery) {
+                this.media = [];
+                this.deletedMedia = [];
+
+                if (this.currentGallery && this.field.singular) {
                     this.currentGallery = Object.assign(this.currentGallery, data);
+                } else {
+                    this.currentGallery = null;
                 }
             },
             openCropper(media) {
@@ -161,6 +203,10 @@
                 this.selectedMedia.cropBoxData = cropBoxData;
                 //update current media preview
                 this.selectedMedia.preview = dataUrl;
+
+                if (!this.selectedMedia.file) {
+                    this.selectedMedia.wasUpdated = true;
+                }
             },
             loadPhoto(e) {
 
@@ -192,13 +238,13 @@
                 }
 
             },
-            deleteImage(media, i) {
+            deleteImage({media, idx}) {
                 // if existing media push to delete
                 if (!media.file) {
                     this.deletedMedia = _.uniq(_.concat(this.deletedMedia, [media.id]));
                 }
                 // delete from media
-                this.media.splice(i, 1);
+                this.media.splice(idx, 1);
             },
 
             testRequest() {
@@ -240,7 +286,29 @@
                 formData.append('new_gallery', JSON.stringify(this.newGalleryData));
                 return formData;
             },
+            strategySort(formData) {
+                if (this.allGalleries.length && this.galleriesOrder) {
+                    this.galleriesOrder.forEach((id, i) => {
+                        formData.append(`galleries_order[${id}][${this.sortableColumn}]`, i)
+                    })
+                }
+                this.media.forEach((m, i) => {
+                    if (m.file) {
+                        formData.append(`new_media_order[][${this.sortableColumn}]`, i)
+                    } else {
+                        formData.append(`existing_media_order[${m.id}][${this.sortableColumn}]`, i)
+                    }
+                });
+                return formData;
+            },
             strategyUpdate(formData) {
+                //implement gallery order
+                // const galleryOrder = null;
+
+                if (this.field.sortable) {
+                    formData = this.strategySort(formData);
+                }
+
                 const updatedMedia = this.media.filter(m => m.wasUpdated)
                     .map(media => _.pick(media, ['id', 'cropBoxData']));
 
@@ -269,10 +337,6 @@
                 });
             },
 
-            createGallery() {
-
-            }
-
         },
         computed: {
             requestData() {
@@ -286,6 +350,8 @@
                 previewUrl,
                 albumRelationName,
                 mediaRelationName,
+                sortable,
+                sortableColumn
             } = this.field;
 
             this.galleryNameAttribute = galleryNameAttribute;
@@ -294,6 +360,10 @@
 
             if (this.allGalleries.length) {
                 this.currentGallery = this.allGalleries[0]
+            }
+
+            if (sortable) {
+                this.sortableColumn = sortableColumn;
             }
 
             if (this.currentGallery) {
