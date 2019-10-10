@@ -40,4 +40,9 @@ trait GalleryMeta
     {
         return $this->withMeta(compact('previewIndexUrl'));
     }
+
+    public function cropBoxDataField(string $cropBoxDataField)
+    {
+        return $this->withMeta(compact('cropBoxDataField'));
+    }
 }

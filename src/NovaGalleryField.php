@@ -125,68 +125,106 @@ class NovaGalleryField extends Field
                                                 $model,
                                                 $attribute)
     {
-        if ($request->get('gallery_strategy') === 'create') {
+        $gallery = new Gallery($this, $model);
+        $galleryRequest = new GalleryRequest($request, $this->albumRelationName);
 
-            $newGalleryAttrs = json_decode($request['new_gallery'], true) ?? [];
+        if ($galleryRequest->get('gallery_strategy') === 'create') {
+            $gallery->createAlbum($galleryRequest->getAssocDecoded('new_gallery'))
+                ->setMedia()
+                ->attachMedia(
+                    $this->handler->save($galleryRequest->get('new'))->pluck('id'),
+                    $galleryRequest->get('new_media_order')
+                );
 
+        }
+        if ($galleryRequest->get('gallery_strategy') === 'update') {
+            $gallery
+                ->setAlbum($galleryRequest->get('current_gallery_id'))
+                ->setMedia()
+                ->updateAlbum($galleryRequest->getAssocDecoded('updated_gallery_data'))
+                ->attachMedia(
+                    $this->handler->save($galleryRequest->get('new'))->pluck('id'),
+                    $galleryRequest->get('new_media_order')
+                )
+                ->setAlbumOrder($galleryRequest->get('galleries_order'))
+                ->sortMedia($galleryRequest->get('existing_media_order'));
 
-            $album = $model->{$this->albumRelationName}()->create($newGalleryAttrs);
+            $this->handler->update($galleryRequest->getAssocDecoded('updated_media'));
 
-            //todo: check if works without commented lines
-//            if ($this->singular) {
-//                $model->{$this->albumRelationName}()->associate($album);
-//            } else {
-//                $model->{$this->albumRelationName}()->attach($album);
+            if ($galleryRequest->has('deleted_media' && $this->deletable)) {
+                $this->handler->delete($galleryRequest->getDecoded('deleted_media'));
+            }
+
+            $gallery->detachMedia($galleryRequest->getDecoded('deleted_media'));
+            $gallery->detachAlbums($galleryRequest->getDecoded('detached_galleries'));
+        }
+
+//        if ($request->get('gallery_strategy') === 'create') {
+//
+//            $newGalleryAttrs = json_decode($request['new_gallery'], true) ?? [];
+//
+//
+//            $album = $model->{$this->albumRelationName}()->create($newGalleryAttrs);
+//
+//            //todo: check if works without commented lines
+////            if ($this->singular) {
+////                $model->{$this->albumRelationName}()->associate($album);
+////            } else {
+////                $model->{$this->albumRelationName}()->attach($album);
+////            }
+//
+//            $mediaIds = $this->handler->save($request['new'])->pluck('id');
+//
+//            if ($this->sortable && $request->has('new_media_order')) {
+//                $mediaIds = collect($mediaIds)->combine($request['new_media_order']);
 //            }
-
-            $mediaIds = $this->handler->save($request['new'])->pluck('id');
-
-            $album->{$this->mediaRelationName}()->attach($mediaIds);
-        }
-
-        if ($request->get('gallery_strategy') === 'update') {
-
-//            2.1 update gallery custom attributes
-            $newGalleryAttrs = json_decode($request['updated_gallery_data'], true) ?? [];
-            if ($this->singular) {
-                $album = tap($model->{$this->albumRelationName})
-                    ->update($newGalleryAttrs);
-            } else {
-                $album = tap($model->{$this->albumRelationName}()
-                    ->find($request['current_gallery_id']))
-                    ->update($newGalleryAttrs);
-            }
-
-            if (!$this->singular && $this->sortable && $request->has('galleries_order')) {
-                $model->{$this->albumRelationName}()->syncWithoutDetaching($request['galleries_order']);
-            }
-//         *   2.2 save new media if exists with user class method
-            $mediaIds = $this->handler->save($request['new'])->pluck('id');
-//         *   2.3 attach media to gallery
-//            2.3.a if sortable combine with order data
-            if ($this->sortable && $request->has('new_media_order')) {
-                $mediaIds = collect($mediaIds)->combine($request['new_media_order']);
-            }
-            $album->{$this->mediaRelationName}()->attach($mediaIds);
-//           2.4 update media
-            $this->handler->update(json_decode($request['updated_media'], true));
-
-//            2.4.a update pivot order if exist
-            if ($this->sortable && $request->has('existing_media_order')) {
-                $album->{$this->mediaRelationName}()->syncWithoutDetaching($request['existing_media_order']);
-            }
-
-//            *   2.5 delete media if has media_deleted (delete files with user func if deletable set to true)
-            if ($request->has('deleted_media')) {
-                if ($this->deletable) $this->handler->delete(json_decode($request['deleted_media']));
-                $album->{$this->mediaRelationName}()->detach(json_decode($request['deleted_media']));
-            }
-//         *   2.6 detach galleries if detached_galleries
-            if ($this->singular === false && $request->has('detached_galleries')) {
-                $model->{$this->albumRelationName}()->detach(json_decode($request['detached_galleries']));
-            }
-
-        }
+//
+//            $album->{$this->mediaRelationName}()->attach($mediaIds);
+//        }
+//
+//        if ($request->get('gallery_strategy') === 'update') {
+//
+////            2.1 update gallery custom attributes
+//            $newGalleryAttrs = json_decode($request['updated_gallery_data'], true) ?? [];
+//            if ($this->singular) {
+//                $album = tap($model->{$this->albumRelationName})
+//                    ->update($newGalleryAttrs);
+//            } else {
+//                $album = tap($model->{$this->albumRelationName}()
+//                    ->find($request['current_gallery_id']))
+//                    ->update($newGalleryAttrs);
+//            }
+//
+//            if (!$this->singular && $this->sortable && $request->has('galleries_order')) {
+//                $model->{$this->albumRelationName}()->syncWithoutDetaching($request['galleries_order']);
+//            }
+////         *   2.2 save new media if exists with user class method
+//            $mediaIds = $this->handler->save($request['new'])->pluck('id');
+////         *   2.3 attach media to gallery
+////            2.3.a if sortable combine with order data
+//            if ($this->sortable && $request->has('new_media_order')) {
+//                $mediaIds = collect($mediaIds)->combine($request['new_media_order']);
+//            }
+//            $album->{$this->mediaRelationName}()->attach($mediaIds);
+////           2.4 update media
+//            $this->handler->update(json_decode($request['updated_media'], true));
+//
+////            2.4.a update pivot order if exist
+//            if ($this->sortable && $request->has('existing_media_order')) {
+//                $album->{$this->mediaRelationName}()->syncWithoutDetaching($request['existing_media_order']);
+//            }
+//
+////            *   2.5 delete media if has media_deleted (delete files with user func if deletable set to true)
+//            if ($request->has('deleted_media')) {
+//                if ($this->deletable) $this->handler->delete(json_decode($request['deleted_media']));
+//                $album->{$this->mediaRelationName}()->detach(json_decode($request['deleted_media']));
+//            }
+////         *   2.6 detach galleries if detached_galleries
+//            if ($this->singular === false && $request->has('detached_galleries')) {
+//                $model->{$this->albumRelationName}()->detach(json_decode($request['detached_galleries']));
+//            }
+//
+//        }
 
     }
 
