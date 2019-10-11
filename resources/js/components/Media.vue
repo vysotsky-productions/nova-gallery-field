@@ -5,7 +5,7 @@
                  style="right: 0">
                 {{__('New')}}
             </div>
-            <img :src="src" class="picture m-auto block" alt="">
+            <img :style="style" @load="style.opacity = 1" :src="src" class="picture m-auto block" alt="">
         </div>
         <p v-if="src" class="flex items-center justify-between text-sm mt-3 px-2">
             <download-button v-if="downloadable && !media.file"
@@ -41,6 +41,12 @@
                 default: true,
             }
         },
+        data: () => ({
+           style: {
+               opacity: 0,
+               transition: 'opacity .3s'
+           }
+        }),
         methods: {
             openCropper(m) {
                 this.$emit('open-cropper', m);

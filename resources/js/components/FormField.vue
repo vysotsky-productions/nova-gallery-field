@@ -58,10 +58,10 @@
                 Иммитировать запрос
             </button>
 
-            <div v-if="currentGallery || newGalleryData" class="flex flex-wrap py-8 -mx-2">
+            <div v-if="currentGallery || newGalleryData" class="flex w-full flex-wrap py-8 -mx-2">
 
-                <draggable v-if="field.sortable" class="flex flex-wrap py-8 -mx-2" v-model="media">
-                    <div class="p-2 w-1/4" style="flex: 0 0 25%;" v-for="(m, i) in media" :key="m.id">
+                <draggable v-if="field.sortable" class="flex w-full flex-wrap py-8 -mx-2" v-model="media">
+                    <div class="p-2 w-1/4" v-for="(m, i) in media" :key="m.id">
                         <media :media="m"
                                :src="m.preview || m.original"
                                :downloadable="field.downloadable"
@@ -72,7 +72,7 @@
                         ></media>
                     </div>
                 </draggable>
-                <div v-else class="p-2 w-1/4" style="flex: 0 0 25%;" v-for="(m, i) in media" :key="m.id">
+                <div v-else class="p-2 w-1/4" v-for="(m, i) in media" :key="m.id">
                     <media :media="m"
                            :src="m.preview || m.original"
                            :downloadable="field.downloadable"
@@ -126,6 +126,7 @@
                 showGallerySortModal: false,
                 galleriesOrder: false,
 
+                editGalleryMode: true,
                 currentGallery: null,
                 allGalleries: [],
                 newGalleryData: null,
@@ -158,12 +159,14 @@
 
         methods: {
             createGallery() {
+                this.editGalleryMode = false;
                 this.showGalleryFields = true;
-                this.currentGallery = null;
-                this.media = [];
-                this.deletedMedia = [];
+                // this.currentGallery = null;
+                // this.media = [];
+                // this.deletedMedia = [];
             },
             editGallery() {
+                this.editGalleryMode = true;
                 this.showGalleryFields = true;
             },
             handleGallerySort(newOrder) {
@@ -195,6 +198,12 @@
             handleGallery(data) {
                 this.newGalleryData = data;
                 this.setCustomFieldsValues(data);
+
+                if(!this.editGalleryMode) {
+                    this.currentGallery = null;
+                    this.media = [];
+                    this.deletedMedia = [];
+                }
 
                 if (this.currentGallery) {
                     this.currentGallery = Object.assign(this.currentGallery, data);
