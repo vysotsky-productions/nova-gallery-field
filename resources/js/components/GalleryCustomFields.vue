@@ -1,11 +1,11 @@
 <template>
     <modal @modal-close="closeModal">
         <card class="text-center m-2 mb-0 bg-white rounded-lg p-view shadow-lg overflow-hidden test"
-              style="width: 80vw">
+              style="width: 60vw">
             <form class=""
                   v-if="customFields"
                   @submit.prevent="sendData">
-                <component class="custom-component" :key="custom.attribute" v-for="(custom, i) in customFields"
+                <component class="custom-component border-transparent text-left" :key="custom.attribute" v-for="(custom, i) in customFields"
                            :is="'form-'+custom.component"
                            :field="custom"
                 >

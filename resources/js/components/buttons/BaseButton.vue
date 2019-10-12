@@ -4,7 +4,7 @@
             @keydown.enter.prevent="$emit('click-or-enter')"
             @click.prevent="$emit('click-or-enter')"
             tabindex="0"
-            class="cursor-pointer dim btn btn-link inline-flex items-center text-primary"
+            class="cursor-pointer dim btn btn-link inline-flex items-center"
     >
         <icon :type="type" class="mr-2" view-box="0 0 20 20" width="16" height="16"/>
         <span class="class mt-1">

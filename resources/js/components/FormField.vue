@@ -1,36 +1,46 @@
 <template>
     <div class="border-b border-40 media-field p-8">
 
-        <div>
-            <h2 v-if="currentGallery || newGalleryData" class="mb-8 text-center text-90 font-normal">
-                {{ field.name }} {{currentGallery ? currentGallery[galleryNameAttribute] :
-                newGalleryData[galleryNameAttribute]}}
-            </h2>
-            <h2 v-else class="mb-8 text-center text-90 font-normal">
-                Галлереи отсутствуют
-            </h2>
+        <div class="flex w-full justify-between">
+            <div class="flex flex-col">
+                <h2 v-if="currentGallery || newGalleryData" class="font-normal mt-2">
+                    {{ field.name }} {{currentGallery ? currentGallery[galleryNameAttribute] :
+                    newGalleryData[galleryNameAttribute]}}
+                </h2>
+                <h2 v-else class="font-normal mt-2">
+                    Галлереи отсутствуют
+                </h2>
+                <base-button type="edit" class="text-sm font-semibold mt-auto" v-if="currentGallery || newGalleryData"
+                             @click-or-enter="editGallery">
+                    {{__('Edit')}}
+                </base-button>
+            </div>
 
-            <button type="button" class="btn btn-default btn-primary" @click.prevent="showGallerySortModal = true">
-                Изменить порядок галерей
-            </button>
 
-            <select v-if="!field.singular && allGalleries && currentGallery"
-                    class="w-1/4 form-control form-select"
-                    @change="handleGalleryChange"
-            >
-                <option v-for="(g, i) in allGalleries" :value="i">
-                    {{g[galleryNameAttribute]}}
-                </option>
-            </select>
+            <div class="w-1/2 flex flex-col" v-if="!field.singular && allGalleries && currentGallery">
+                <div class="flex w-full items-center">
+                    <label class="block text-80">
+                        {{__('Choose gallery')}}:
+                    </label>
+                    <select class="flex-1 form-control form-select mr-1 ml-4"
+                            @change="handleGalleryChange"
+                    >
+                        <option v-for="(g, i) in allGalleries" :value="i">
+                            {{g[galleryNameAttribute]}}
+                        </option>
+                    </select>
+                    <button type="button" class="btn btn-default btn-primary" v-if="canCreateGallery"
+                            @click.prevent="createGallery">
+                        {{__('Create')}}
+                    </button>
+                </div>
 
-            <button type="button" v-if="canCreateGallery" class="btn btn-default btn-primary"
-                    @click.prevent="createGallery">
-                Создать галлерею
-            </button>
-            <button type="button" v-if="currentGallery || newGalleryData"
-                    class="btn btn-default btn-primary" @click.prevent="editGallery">
-                Редактировать галлерею
-            </button>
+                <base-button type="edit" v-if="field.sortable" @click-or-enter="showGallerySortModal = true"
+                             class="ml-auto text-sm font-semibold mt-4">
+                    {{__('Sort Galleries')}}
+                </base-button>
+            </div>
+
         </div>
 
         <sortable-galleries v-if="showGallerySortModal && field.sortable"
@@ -46,19 +56,30 @@
                                :custom-fields="customGalleryFields"
         ></gallery-custom-fields>
 
+        <!--<button type="button" v-if="currentGallery || newGalleryData" class="btn btn-default btn-primary"-->
+        <!--@click.prevent="$refs.photo.click()">-->
+        <!--Добавить новую фотографию-->
+        <!--</button>-->
+        <div v-if="currentGallery || newGalleryData"
+             @drop.prevent="loadPhoto" @dragover.prevent
+             class="w-full rounded-lg bg-40 mt-8"
+             style="height: 250px;">
+            <button type="button"
+                    class="w-full h-full block text-2xl text-70 capitalize"
+                    @click.prevent="$refs.photo.click()">
+                {{__('Drop Photos Here')}}
+            </button>
+        </div>
+
         <input type="file" ref="photo" multiple accept="image/*" max="5" style="display: none;" @change="loadPhoto">
 
-        <div class="w-full pt-8">
+        <div class="w-full">
 
-            <button type="button" v-if="currentGallery || newGalleryData" class="btn btn-default btn-primary"
-                    @click.prevent="$refs.photo.click()">
-                Добавить новую фотографию
-            </button>
-            <button type="button" class="btn btn-default btn-primary" @click.prevent="testRequest">
-                Иммитировать запрос
-            </button>
+            <!--<button type="button" class="btn btn-default btn-primary" @click.prevent="testRequest">-->
+            <!--Иммитировать запрос-->
+            <!--</button>-->
 
-            <div v-if="currentGallery || newGalleryData" class="flex w-full flex-wrap py-8 -mx-2">
+            <div v-if="currentGallery || newGalleryData">
 
                 <draggable v-if="field.sortable" class="flex w-full flex-wrap py-8 -mx-2" v-model="media">
                     <div class="p-2 w-1/4" v-for="(m, i) in media" :key="m.id">
@@ -199,7 +220,7 @@
                 this.newGalleryData = data;
                 this.setCustomFieldsValues(data);
 
-                if(!this.editGalleryMode) {
+                if (!this.editGalleryMode) {
                     this.currentGallery = null;
                     this.media = [];
                     this.deletedMedia = [];
