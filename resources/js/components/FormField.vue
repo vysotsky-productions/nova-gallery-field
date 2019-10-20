@@ -10,6 +10,12 @@
                 <h2 v-else class="font-normal mt-2">
                     Галлереи отсутствуют
                 </h2>
+
+                <button type="button" class="btn mt-4 btn-default btn-primary" v-if="!currentGallery && !newGalleryData"
+                        @click.prevent="createGallery">
+                    {{__('Create')}}
+                </button>
+
                 <base-button type="edit" class="text-sm font-semibold mt-auto" v-if="currentGallery || newGalleryData"
                              @click-or-enter="editGallery">
                     {{__('Edit')}}
@@ -201,7 +207,6 @@
                     previewUrl,
                     cropBoxDataField
                 } = this.field;
-                console.log(this.currentGallery);
                 this.media = this.currentGallery[mediaRelationName].map(m => {
                         m.original = m[previewUrl] || null;
                         m.preview = m[previewFormUrl] || m[previewUrl] || null;
@@ -393,7 +398,7 @@
                 return Boolean(this.currentGallery);
             }
         },
-        mounted() {
+        created() {
             const {
                 galleryNameAttribute = 'name',
                 previewFormUrl,

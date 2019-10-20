@@ -87,7 +87,7 @@ class Gallery
     }
 
 
-    public function sortMedia(array $idsWithOrder = [])
+    public function sortMedia($idsWithOrder)
     {
         if ($idsWithOrder && count($idsWithOrder)) {
             $this->media->syncWithoutDetaching($idsWithOrder);

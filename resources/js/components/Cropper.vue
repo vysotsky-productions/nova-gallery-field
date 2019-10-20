@@ -47,7 +47,6 @@
         },
         methods: {
             handleSetCropData(cropper, data) {
-                console.log(data);
                 cropper.setData(data);
             },
             handleCrop() {
