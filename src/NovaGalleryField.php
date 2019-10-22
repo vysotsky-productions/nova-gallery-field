@@ -5,11 +5,17 @@ namespace VysotskyProductions\NovaGalleryField;
 use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Illuminate\Support\Collection;
+use VysotskyProductions\NovaGalleryField\Traits\GalleryCropper;
 use VysotskyProductions\NovaGalleryField\Traits\GalleryMeta;
+use VysotskyProductions\NovaGalleryField\Traits\GalleryPreviews;
+use VysotskyProductions\NovaGalleryField\Traits\GallerySort;
 
 class NovaGalleryField extends Field
 {
     use GalleryMeta;
+    use GalleryPreviews;
+    use GallerySort;
+    use GalleryCropper;
     /**
      * The field's component.
      *
@@ -17,13 +23,14 @@ class NovaGalleryField extends Field
      */
     public $component = 'NovaGalleryField';
 
+    public $showOnIndex = false;
+    public $showOnDetail = false;
     public $showOnCreation = false;
+    public $showOnUpdate = true;
 
     public $name;
     public $galleriesCollection;
     public $singular = true;
-    public $sortable = false;
-    public $sortableColumn = 'order';
 
     public $albumRelationName = 'album';
     public $mediaRelationName = 'media';
@@ -38,13 +45,16 @@ class NovaGalleryField extends Field
         }
         $this->albumRelationName = $albumRelationName;
         $this->mediaRelationName = $mediaRelationName;
+
+        $this->setGalleryDefaults(config('nova-gallery-field.photo_attributes'));
+        $this->setSortableDefaults(config('nova-gallery-field.order'));
+        $this->setCropperDefaults(config('nova-gallery-field.cropper'));
     }
 
     public $deletable = false;
 
     public $downloadable = true;
 
-    public $useCropper = true;
 
     public $handler;
 
@@ -56,17 +66,10 @@ class NovaGalleryField extends Field
      */
     public function setDeletable(bool $deletable): NovaGalleryField
     {
-//        todo:implement deletable logic only if deletable is true
         $this->deletable = $deletable;
         return $this;
     }
 
-    public function setSortable(string $sortableColumn = 'order')
-    {
-        $this->sortableColumn = $sortableColumn;
-        $this->sortable = true;
-        return $this;
-    }
 
     public function multiple()
     {
@@ -94,14 +97,6 @@ class NovaGalleryField extends Field
         return $this;
     }
 
-    /**
-     * @return NovaGalleryField
-     */
-    public function disableCropper(): NovaGalleryField
-    {
-        $this->useCropper = false;
-        return $this;
-    }
 
     public function disableDownload()
     {
@@ -173,14 +168,11 @@ class NovaGalleryField extends Field
         return array_merge(parent::jsonSerialize(), [
             'downloadable' => $this->downloadable,
             'deletable' => $this->deletable,
-            'useCropper' => $this->useCropper,
             'galleriesCollection' => $this->galleriesCollection,
             'customGalleryFields' => $this->customGalleryFields,
             'albumRelationName' => $this->albumRelationName,
             'mediaRelationName' => $this->mediaRelationName,
             'singular' => $this->singular,
-            'sortable' => $this->sortable,
-            'sortableColumn' => $this->sortableColumn
-        ]);
+        ], $this->getGalleryPreviewFields(), $this->getSortableFields(), $this->getGalleryCropperFields());
     }
 }

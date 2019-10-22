@@ -1,16 +1,29 @@
 # nova-photo-field
 
 ```
-MediaImage:make('Превью', 'preview')
-    ->handleClass(SavePhoto::class)
-    ->params([
-        'folder'  => 'dresses-preview',
-        'thumbs'  => config('thumbs.dresses-preview'),
-        'cropper' => true,
-        'ratio'   => 3 / 4,
-    ])
-    ->getPhoto('previewUrl')
-    ->getPhotoDetail('previewUrl')
-    ->getPhotoForm('previewUrl')
-    ->getPhotoIndex('previewUrl'),
+   composer require vysotsky-productions/nova-gallery-field
+
+   php artisan vendor:publish --tag=nova-gallery-field
+   
+
+ NovaGalleryField::make('Альбом', $this->albums, 'albums')
+                ->aspectRatio(3/4)
+                ->setUseCropper($bool default = true)
+                ->setCropBoxDataField('crop_data_field')
+                ->getPhoto('original_url')
+                ->getPhotoForm('preview_url')
+                ->getPhotoDetail('preview_url')
+                ->getPhotoIndex('preview_url')
+                ->cropBoxDataField('crop_data')
+                ->setCustomGalleryFields([
+                    Text::make('name'),
+                    Text::make('description')
+                ])
+                ->multiple()
+                ->setSortable('order')
+                ->setHandler(
+                    new SavePhotoCollection(
+                        new SavePhoto('persons/albums', config('thumbs.user.persons/avatar'))
+                    )
+                )
 ```

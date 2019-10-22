@@ -20,29 +20,4 @@ trait GalleryMeta
     {
         return $this->withMeta(['params' => $params]);
     }
-
-    public function getPhoto(string $previewUrl = null)
-    {
-        return $this->withMeta(compact('previewUrl'));
-    }
-
-    public function getPhotoDetail(string $previewDetailUrl = null)
-    {
-        return $this->withMeta(compact('previewDetailUrl'));
-    }
-
-    public function getPhotoForm(string $previewFormUrl = null)
-    {
-        return $this->withMeta(compact('previewFormUrl'));
-    }
-
-    public function getPhotoIndex(string $previewIndexUrl = null)
-    {
-        return $this->withMeta(compact('previewIndexUrl'));
-    }
-
-    public function cropBoxDataField(string $cropBoxDataField)
-    {
-        return $this->withMeta(compact('cropBoxDataField'));
-    }
 }
