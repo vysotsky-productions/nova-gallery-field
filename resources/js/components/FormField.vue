@@ -266,7 +266,7 @@
                         cropBoxData: {}
                     })
                 ).then(media => {
-                    this.media.push(media);
+                    this.media.unshift(media);
                     // this.newMedia.push(media);
                 }));
 
