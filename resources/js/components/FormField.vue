@@ -266,8 +266,11 @@
                         cropBoxData: {}
                     })
                 ).then(media => {
-                    this.media.unshift(media);
-                    // this.newMedia.push(media);
+                    if (this.field.mediaToEnd) {
+                        this.media.push(media);
+                    } else {
+                        this.media.unshift(media);
+                    }
                 }));
 
                 //reset input value

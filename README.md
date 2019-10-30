@@ -11,6 +11,7 @@
                 ->setUseCropper($bool default = true)
                 ->setCropBoxDataField('crop_data_field')
                 ->getPhoto('original_url')
+                ->mediaToEnd()
                 ->getPhotoForm('preview_url')
                 ->getPhotoDetail('preview_url')
                 ->getPhotoIndex('preview_url')

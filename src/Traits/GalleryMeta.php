@@ -20,4 +20,9 @@ trait GalleryMeta
     {
         return $this->withMeta(['params' => $params]);
     }
+
+    public function mediaToEnd()
+    {
+        return $this->withMeta(['mediaToEnd' => true]);
+    }
 }
