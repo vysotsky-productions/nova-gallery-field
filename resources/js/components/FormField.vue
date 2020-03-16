@@ -87,7 +87,7 @@
 
             <div v-if="currentGallery || newGalleryData">
 
-                <draggable v-if="field.sortable" class="flex w-full flex-wrap py-8 -mx-2" v-model="media">
+                <draggable :forceFallback="true" v-bind="dragOptions" v-if="field.sortable" class="flex w-full flex-wrap py-8 -mx-2" v-model="media">
                     <div class="p-2 w-1/4" v-for="(m, i) in media" :key="m.id">
                         <media :media="m"
                                :src="m.preview || m.original"
@@ -139,7 +139,7 @@
     import BaseButton from "./buttons/BaseButton";
     import Media from "./Media";
 
-    Vue.config.devtools = true;
+    // Vue.config.devtools = true;
 
     export default {
         components: {Cropper, DownloadButton, BaseButton, GalleryCustomFields, Media, draggable, SortableGalleries},
@@ -390,6 +390,14 @@
 
         },
         computed: {
+            dragOptions() {
+                return {
+                    animation: 200,
+                    group: "description",
+                    disabled: false,
+                    ghostClass: "ghost"
+                };
+            },
             isNewGallery() {
                 return !this.currentGallery && this.newGalleryData;
             },
@@ -451,5 +459,18 @@
         height:          250px;
         object-fit:      contain;
         object-position: center;
+    }
+
+    .flip-list-move {
+        transition: transform 0.5s;
+    }
+
+    .no-move {
+        transition: transform 0s;
+    }
+
+    .ghost {
+        opacity:    0.5;
+        background: #c8ebfb;
     }
 </style>

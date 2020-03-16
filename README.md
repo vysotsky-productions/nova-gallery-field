@@ -27,4 +27,6 @@
                         new SavePhoto('persons/albums', config('thumbs.user.persons/avatar'))
                     )
                 )
+
+                download_link - media attribute name for download link as defaultx
 ```

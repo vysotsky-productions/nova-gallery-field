@@ -9,7 +9,7 @@
         </div>
         <p v-if="src" class="flex items-center justify-between text-sm mt-3 px-2">
             <download-button v-if="downloadable && !media.file"
-                             :href="media.preview || media.original"></download-button>
+                             :href="media.download_link || media.preview || media.original"></download-button>
             <base-button v-if="useCropper" class="text-success" @click-or-enter="openCropper(media)">
                 {{ __('Crop') }}
             </base-button>
