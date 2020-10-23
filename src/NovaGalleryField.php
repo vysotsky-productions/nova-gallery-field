@@ -35,6 +35,8 @@ class NovaGalleryField extends Field
     public $albumRelationName = 'album';
     public $mediaRelationName = 'media';
 
+    public $deleteOrDetach = false;
+
     public function __construct($name, $galleriesCollection, $albumRelationName = 'album', $mediaRelationName = 'media')
     {
         $this->name = $name;
@@ -115,6 +117,19 @@ class NovaGalleryField extends Field
         return $this;
     }
 
+    /**
+     * if sets to true user can handle detach / delete step by his own
+     * with image handler method deleteOrDetach
+     *
+     * @param bool $deleteOrDetach
+     * @return NovaGalleryField
+     */
+    public function useDeleteOrDetach(bool $deleteOrDetach = true): NovaGalleryField
+    {
+        $this->deleteOrDetach = $deleteOrDetach;
+        return $this;
+    }
+
     protected function fillAttributeFromRequest(NovaRequest $request,
                                                 $requestAttribute,
                                                 $model,
@@ -146,11 +161,15 @@ class NovaGalleryField extends Field
 
             $this->handler->update($galleryRequest->getAssocDecoded('updated_media'));
 
-            $gallery->detachMedia($galleryRequest->getDecoded('deleted_media'));
-            $gallery->detachAlbums($galleryRequest->getDecoded('detached_galleries'));
+            if($this->deleteOrDetach) {
+                $this->handler->deleteOrDetach($galleryRequest->getDecoded('deleted_media'), $gallery);
+            } else {
+                $gallery->detachMedia($galleryRequest->getDecoded('deleted_media'));
+                $gallery->detachAlbums($galleryRequest->getDecoded('detached_galleries'));
 
-            if ($galleryRequest->has('deleted_media') && $this->deletable) {
-                $this->handler->delete($galleryRequest->getDecoded('deleted_media'));
+                if ($galleryRequest->has('deleted_media') && $this->deletable) {
+                    $this->handler->delete($galleryRequest->getDecoded('deleted_media'));
+                }
             }
 
         }

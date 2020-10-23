@@ -21,6 +21,7 @@
                     Text::make('description')
                 ])
                 ->multiple()
+                ->useDeleteOrDetach
                 ->setSortable('order')
                 ->setHandler(
                     new SavePhotoCollection(
